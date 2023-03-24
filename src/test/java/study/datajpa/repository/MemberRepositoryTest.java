@@ -3,6 +3,10 @@ package study.datajpa.repository;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Slice;
+import org.springframework.data.domain.Sort;
 import org.springframework.test.annotation.Rollback;
 import org.springframework.transaction.annotation.Transactional;
 import study.datajpa.dto.MemberDto;
@@ -156,5 +160,32 @@ class MemberRepositoryTest {
         List<Member> aaa = memberRepository.findListByUsername("AAA");
         assertThat(aaa.size()).isEqualTo(1);
         assertThat(aaa.get(0).getUsername()).isEqualTo(m1.getUsername());
+    }
+
+    @Test
+    public void paging() {
+        //given
+        memberRepository.save(new Member("member1", 10));
+        memberRepository.save(new Member("member2", 10));
+        memberRepository.save(new Member("member3", 10));
+        memberRepository.save(new Member("member4", 10));
+        memberRepository.save(new Member("member5", 10));
+
+        int age = 10;
+        PageRequest pageRequest = PageRequest.of(0, 3, Sort.by(Sort.Direction.DESC, "username"));
+
+        //when
+        Page<Member> page = memberRepository.findByAge(age, pageRequest);
+
+        Page<MemberDto> toMap = page.map(member -> new MemberDto(member.getId(), member.getUsername(), null));
+
+        //then
+        List<MemberDto> content = toMap.getContent(); //조회된 데이터
+        assertThat(content.size()).isEqualTo(3); //조회된 데이터의 개수
+        assertThat(toMap.getTotalElements()).isEqualTo(5); //전체 데이터의 개수
+        assertThat(toMap.getNumber()).isEqualTo(0); //현재 페이지 번호
+        assertThat(toMap.getTotalPages()).isEqualTo(2); //전체 페이지 번호
+        assertThat(toMap.isFirst()).isTrue(); //첫 번째 항목인지 확인
+        assertThat(toMap.hasNext()).isTrue(); //다음 페이지 존재 여부
     }
 }
